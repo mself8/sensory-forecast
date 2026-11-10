@@ -32,7 +32,8 @@
 | `pleos.car.permission.CONTROL_CAR_WINDOWS` | 창문 위치, 커튼, 스마트 글라스 제어 |
 | `pleos.car.permission.CAR_CLIMATE` | 공조 상태 조회 |
 | `pleos.car.permission.CONTROL_CAR_CLIMATE` | 내기 순환, 바람 세기 제어 |
-| `pleos.car.permission.CAR_LIGHTS` | 실내 조명 색 설정 |
+| `pleos.car.permission.CAR_LIGHTS` | 실내 조명 상태 조회 |
+| `pleos.car.permission.CONTROL_CAR_LIGHTS` | 실내 조명 색 설정. 문서에는 없지만 에뮬레이터에서 필요했습니다 |
 
 ## 시작과 해제
 
@@ -81,7 +82,7 @@
 | 스마트 글라스 | `setSmartGlassLevel(area: WindowArea, value: Int)` | CONTROL_CAR_WINDOWS |
 | 내기 순환 | `setHvacRecirculation(area: SeatArea, value: Boolean)` | CONTROL_CAR_CLIMATE |
 | 바람 세기 | `setHvacFanSpeed(area: SeatArea, value: Int)` | CONTROL_CAR_CLIMATE |
-| 실내 조명 색 | `setAmbientLightBrightnessColor(area: SeatArea, value: Int)` 값은 32비트 ARGB | CAR_LIGHTS |
+| 실내 조명 색 | `setAmbientLightBrightnessColor(area: SeatArea, value: Int)` 값은 32비트 ARGB | CAR_LIGHTS, CONTROL_CAR_LIGHTS |
 | 벨트 체결 알림 | `registerSeatBeltBuckledState(area: SeatArea, listener)` | CAR_SEATS |
 | 벨트 미착용 경고 | `registerSeatBeltNotBuckledWarning(area: SeatArea, listener)` | CAR_SAFETY |
 | 좌석 점유 | `registerSeatOccupancy(area: SeatArea, listener)` | CAR_SEATS |
@@ -107,6 +108,18 @@
 - 좌석별 조명은 가상 콘솔에서 좌석을 고를 수 없어 보여 주기 어렵습니다.
 - 벨트: Safety 영역의 경고등 카드를 읽는 `registerTelltales`는 일반 앱이 받을 수 없는 권한이 필요합니다. 그 카드를 켰을 때 좌석별 벨트 신호가 오는지 에뮬레이터에서 먼저 시험합니다.
 - 길 위 사건은 내비 모의 주행으로 만듭니다. 주의 지점과 회전 안내 이벤트가 모의 주행에서 실제로 들어오는지 먼저 시험해야 합니다.
+
+## 에뮬레이터에서 확인한 것
+
+2026-11-10 Pleos Connect Emulator v2.1.0에서 시험 주행으로 확인했습니다.
+
+- **주행 중 화면**: 기어 D, 시속 30km가 되면 앱 화면이 "주행 중에는 사용할 수 없습니다"로 막힙니다. 그래서 예보는 화면 없이 `ForecastService`가 합니다.
+- **창문**: `setWindowPosition`에 0을 보내면 50으로 열린 창문이 0으로 닫힙니다.
+- **공조**: 운전석 영역 하나로 보내면 지원하지 않는 영역이라는 오류가 납니다. `checkHvacRecirculationCapabilities`, `checkHvacFanSpeedCapabilities`가 돌려준 영역으로 보내면 됩니다.
+- **조명**: 좌석별 영역이 없고, 다섯 좌석을 묶은 차 전체 영역 하나만 있습니다. `checkAmbientLightBrightnessColorCapabilities`로 영역을 받아 씁니다.
+- **가상 콘솔**: 콘솔 페이지가 열려 있어야 차 상태가 바뀝니다. 페이지는 1초마다 `POST /browser/session`을 보내고, 값은 `GET /vehicle/state`로 읽고 `PUT /vehicle/body`, `/vehicle/hvac`, `/vehicle/gear`, `/vehicle/controls`로 바꿉니다.
+- **내비**: 학교 네트워크에서는 HTTPS 검사 장비 때문에 내비가 지도 서버에 붙지 못하고 "서비스 연결 중입니다"에 멈춥니다. 학교 밖 네트워크에서 시험해야 합니다.
+- **시험 주행**: 내비 없이도 앱의 "시험 주행 시작" 버튼으로 과속방지턱 두 개, 터널, 공사 구간, 도착을 차례로 흘려보낼 수 있습니다. 시연에 쓰면 시험용 입력이라고 밝힙니다.
 
 ## 명세를 더 읽을 때
 

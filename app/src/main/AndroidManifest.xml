@@ -32,8 +32,13 @@
     <uses-permission android:name="pleos.car.permission.CAR_CLIMATE" />
     <uses-permission android:name="pleos.car.permission.CONTROL_CAR_CLIMATE" />
 
-    <!-- 미리 알리기: 아이 자리 조명 색. 조명 설정 API가 요구하는 권한입니다. -->
+    <!-- 미리 알리기: 아이 자리 조명 색. 문서에는 CAR_LIGHTS만 적혀 있지만, 에뮬레이터에서 색을 바꾸려면 CONTROL_CAR_LIGHTS도 필요했습니다. -->
     <uses-permission android:name="pleos.car.permission.CAR_LIGHTS" />
+    <uses-permission android:name="pleos.car.permission.CONTROL_CAR_LIGHTS" />
+
+    <!-- 달리는 동안 화면 없이 예보하는 서비스 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <application
         android:allowBackup="false"
@@ -49,6 +54,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".ForecastService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Announces upcoming road events to a child passenger by voice, sound and cabin light while driving" />
+        </service>
     </application>
 
 </manifest>

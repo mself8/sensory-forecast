@@ -21,6 +21,8 @@ interface Announcer {
 interface CabinControl {
     fun closeWindow(seat: SeatPosition)
     fun setRecirculation(on: Boolean)
-    fun setFanLevel(level: Int)
+
+    /** 바람이 [level]보다 셀 때만 [level]로 낮춥니다. */
+    fun lowerFanTo(level: Int)
     fun setSeatLight(seat: SeatPosition, colorArgb: Int)
 }
