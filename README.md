@@ -120,7 +120,7 @@ gradle/libs.versions.toml  SDK와 도구 버전
 
 ## 팀 규칙
 
-- **브랜치**: `이름/기능` 형식으로 만들고, main에는 PR로 합칩니다. 예: `songyoon/forecast`
+- **브랜치**: `기능/설명` 형식으로 만들고, main에는 PR로 합칩니다. 예: `feat/belt-alert`
 - **코드 자리**: 판단 로직은 `core`, SDK를 부르는 코드는 `car`, 화면은 `ui`에 둡니다. `core`는 SDK를 직접 부르지 않습니다.
 - **버전**: SDK와 도구 버전은 `gradle/libs.versions.toml`에서만 바꿉니다.
 - **아이디어**: [양식](docs/ideas/TEMPLATE.md)을 복사해 `docs/ideas/이름_아이디어.md`로 올립니다.
@@ -135,7 +135,7 @@ gradle/libs.versions.toml  SDK와 도구 버전
 
 ## 팀
 
-팀명과 팀원은 정해지면 적습니다.
+공모전 안내에 따라 이 레포와 첨부자료에는 실명, 연락처, 계정 정보를 적지 않습니다. 팀 정보는 접수양식에만 적습니다.
 
 ## 근거
 

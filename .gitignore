@@ -16,6 +16,11 @@ captures/
 .env
 keystore.properties
 
+# 접수양식은 연락처와 서명이 들어가므로 올리지 않습니다. 기획서 초안은 docs/proposal에 마크다운으로 씁니다
+*.docx
+*.hwp
+*.hwpx
+
 # 아이 기록과 시범 데이터는 레포에 올리지 않습니다
 data/private/
 *.log
