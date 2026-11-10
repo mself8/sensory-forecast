@@ -1,0 +1,22 @@
+# SDK와 도구 버전은 이 파일 한 곳에서만 바꿉니다.
+# Pleos SDK 버전은 2026-11-09에 Pleos Maven 저장소의 최신 배포본과 공식 문서를 대조해 정했습니다.
+
+[versions]
+agp = "8.7.3"
+kotlin = "2.0.21"
+pleosVehicle = "2.3.2"
+pleosNaviHelper = "3.0.5"
+pleosTextToSpeech = "3.3.1"
+pleosSpeechToText = "3.3.1"
+junit = "4.13.2"
+
+[libraries]
+pleos-vehicle = { group = "ai.pleos.playground", name = "Vehicle", version.ref = "pleosVehicle" }
+pleos-navihelper = { group = "ai.pleos.playground", name = "NaviHelper", version.ref = "pleosNaviHelper" }
+pleos-texttospeech = { group = "ai.pleos.playground", name = "TextToSpeech", version.ref = "pleosTextToSpeech" }
+pleos-speechtotext = { group = "ai.pleos.playground", name = "SpeechToText", version.ref = "pleosSpeechToText" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Pleos Connect는 Android Automotive OS 기반입니다. -->
+    <uses-feature
+        android:name="android.hardware.type.automotive"
+        android:required="true" />
+
+    <!-- 길 위 사건 받기: 내비 주의 지점, 회전 안내, 목적지 정보 -->
+    <uses-permission android:name="pleos.car.permission.NAVI_ROUTE" />
+
+    <!-- 미리 알리기: 음성 합성 -->
+    <uses-permission android:name="pleos.car.permission.TTS_SERVICE" />
+
+    <!-- 부모 음성 명령: "쉬자" 같은 말을 듣습니다 -->
+    <uses-permission android:name="pleos.car.permission.STT_SERVICE" />
+
+    <!-- 좌석: 벨트 체결과 좌석 점유 조회 -->
+    <uses-permission android:name="pleos.car.permission.CAR_SEATS" />
+
+    <!-- 벨트 미착용 경고: 좌석별 벨트 신호를 못 받을 때 대안 -->
+    <uses-permission android:name="pleos.car.permission.CAR_SAFETY" />
+
+    <!-- 기어 상태: 차가 섰는지 확인 -->
+    <uses-permission android:name="pleos.car.permission.CAR_DRIVE" />
+
+    <!-- 미리 바꾸기: 창문 위치, 커튼, 스마트 글라스 -->
+    <uses-permission android:name="pleos.car.permission.CAR_WINDOWS" />
+    <uses-permission android:name="pleos.car.permission.CONTROL_CAR_WINDOWS" />
+
+    <!-- 미리 바꾸기: 내기 순환, 바람 세기 -->
+    <uses-permission android:name="pleos.car.permission.CAR_CLIMATE" />
+    <uses-permission android:name="pleos.car.permission.CONTROL_CAR_CLIMATE" />
+
+    <!-- 미리 알리기: 아이 자리 조명 색. 조명 설정 API가 요구하는 권한입니다. -->
+    <uses-permission android:name="pleos.car.permission.CAR_LIGHTS" />
+
+    <application
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

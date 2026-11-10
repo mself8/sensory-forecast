@@ -1,0 +1,25 @@
+# Android · Gradle
+.gradle/
+build/
+*/build/
+local.properties
+.idea/
+*.iml
+.cxx/
+captures/
+.externalNativeBuild/
+
+# 서명 키와 비밀 정보는 올리지 않습니다
+*.jks
+*.keystore
+*.pem
+.env
+keystore.properties
+
+# 아이 기록과 시범 데이터는 레포에 올리지 않습니다
+data/private/
+*.log
+
+# 기타
+.DS_Store
+__pycache__/
