@@ -3,10 +3,13 @@ package com.sensoryforecast.car
 import android.content.Context
 import android.media.AudioManager
 import android.media.ToneGenerator
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import ai.pleos.playground.tts.TextToSpeech
 import ai.pleos.playground.tts.constant.ErrorType
 import ai.pleos.playground.tts.constant.Mode
+import ai.pleos.playground.tts.listener.EventListener
 import ai.pleos.playground.tts.listener.OnInitializeListener
 import com.sensoryforecast.core.Announcer
 import com.sensoryforecast.core.RoadEventKind
@@ -15,41 +18,98 @@ import com.sensoryforecast.core.Sense
 /**
  * 짧은 말은 Pleos 음성 합성으로, 효과음은 안드로이드 기본 신호음으로 냅니다.
  * 음성 합성은 기기 안에서 도는 방식이라 네트워크가 없어도 됩니다.
+ *
+ * 말이 끝나면 넘겨받은 일을 메인 스레드에서 차례로 부릅니다.
+ * 끝났다는 신호가 [DONE_TIMEOUT_MILLIS] 안에 오지 않아도 부릅니다. 창문처럼 보호를 위한 일이 막히지 않게 하려는 것입니다.
  */
 class PleosAnnouncer(context: Context) : Announcer {
 
+    private val main = Handler(Looper.getMainLooper())
     private val tts = TextToSpeech(context.applicationContext, Mode.ON_DEVICE)
     private val tones = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
     private var ready = false
-    private var pending: String? = null
+    private var released = false
+    private val waiting = ArrayDeque<Pair<String, () -> Unit>>()
+    private val afterSpeech = ArrayDeque<Runnable>()
+
+    private val events = object : EventListener {
+        override fun onStart() = Unit
+        override fun onReady() = Unit
+        override fun onDone() {
+            main.post(::finishOne)
+        }
+
+        override fun onStop() {
+            main.post(::finishOne)
+        }
+
+        override fun onError(error: ErrorType) {
+            Log.w(TAG, "말하기 실패: $error")
+            main.post(::finishOne)
+        }
+        override fun onUpdatedRms(rms: Double) = Unit
+    }
 
     init {
         tts.initialize(object : OnInitializeListener {
             override fun onSuccess() {
-                ready = true
-                Log.i(TAG, "음성 합성 준비됨")
-                pending?.let { speak(it) }
-                pending = null
+                main.post {
+                    if (released) return@post
+                    tts.addEventListener(events)
+                    ready = true
+                    Log.i(TAG, "음성 합성 준비됨")
+                    while (waiting.isNotEmpty()) waiting.removeFirst().let { (text, done) -> speak(text, done) }
+                }
             }
 
             override fun onFailure(error: ErrorType) {
                 Log.w(TAG, "음성 합성 준비 실패: $error")
+                main.post { while (waiting.isNotEmpty()) waiting.removeFirst().second() }
             }
         })
     }
 
-    override fun speak(text: String) {
+    override fun speak(text: String, onDone: () -> Unit) {
+        if (released) return
+        if (!ready) {
+            waiting.addLast(text to onDone)
+            return
+        }
         Log.i(TAG, "말: $text")
-        if (ready) tts.speak(text, true) else pending = text
+        val once = object : Runnable {
+            var ran = false
+            override fun run() {
+                if (ran) return
+                ran = true
+                main.removeCallbacks(this)
+                afterSpeech.remove(this)
+                onDone()
+            }
+        }
+        afterSpeech.addLast(once)
+        main.postDelayed(once, DONE_TIMEOUT_MILLIS)
+        tts.speak(text, true)
+    }
+
+    private fun finishOne() {
+        afterSpeech.firstOrNull()?.run()
     }
 
     override fun playCue(kind: RoadEventKind) {
+        if (released) return
         Log.i(TAG, "효과음: $kind")
         tones.startTone(toneFor(kind.sense), CUE_MILLIS)
     }
 
     fun release() {
-        tts.stop()
+        released = true
+        afterSpeech.forEach { main.removeCallbacks(it) }
+        afterSpeech.clear()
+        waiting.clear()
+        if (ready) {
+            tts.stop()
+            tts.removeEventListener(events)
+        }
         tts.release()
         tones.release()
     }
@@ -65,5 +125,6 @@ class PleosAnnouncer(context: Context) : Announcer {
     companion object {
         private const val TAG = "SensoryForecast"
         private const val CUE_MILLIS = 400
+        private const val DONE_TIMEOUT_MILLIS = 8000L
     }
 }

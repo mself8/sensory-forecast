@@ -8,7 +8,16 @@ class ForecastEngineTest {
 
     private class Recorder : Announcer, CabinControl {
         val calls = mutableListOf<String>()
-        override fun speak(text: String) { calls += "말:$text" }
+
+        /** true면 말이 끝났다는 신호를 바로 보내지 않고 [finishSpeech]를 부를 때까지 미룹니다. */
+        var holdSpeech = false
+        private val held = mutableListOf<() -> Unit>()
+        fun finishSpeech() { held.forEach { it() }; held.clear() }
+
+        override fun speak(text: String, onDone: () -> Unit) {
+            calls += "말:$text"
+            if (holdSpeech) held += onDone else onDone()
+        }
         override fun playCue(kind: RoadEventKind) { calls += "소리:$kind" }
         override fun closeWindow(seat: SeatPosition) { calls += "창문닫기:$seat" }
         override fun setRecirculation(on: Boolean) { calls += "내기:$on" }
@@ -95,6 +104,41 @@ class ForecastEngineTest {
             listOf(ev("t", RoadEventKind.TUNNEL, 140.0), ev("a", RoadEventKind.SPEED_BUMP, 80.0))
         )
         assertEquals("말:곧 덜컹해요. 곧 터널이에요. 어두워져요.", r.calls.first())
+    }
+
+    @Test
+    fun 창문은_말이_끝난_뒤에_닫는다() {
+        val r = Recorder().apply { holdSpeech = true }
+        ForecastEngine(card(modes = setOf(CueMode.VOICE)), r, r)
+            .onEvents(listOf(ev("t", RoadEventKind.TUNNEL, 150.0)))
+        assertEquals(listOf("말:곧 터널이에요. 어두워져요."), r.calls)
+        r.finishSpeech()
+        assertEquals(listOf("말:곧 터널이에요. 어두워져요.", "창문닫기:REAR_RIGHT", "내기:true"), r.calls)
+    }
+
+    @Test
+    fun 앞_사건이_지나는_순간_다음_사건_조명이_켜지면_깜빡이지_않는다() {
+        val r = Recorder()
+        val e = ForecastEngine(card(modes = setOf(CueMode.LIGHT)), r, r)
+        e.onEvents(listOf(ev("a", RoadEventKind.SPEED_BUMP, 45.0), ev("b", RoadEventKind.SPEED_BUMP, 85.0)))
+        e.onEvents(listOf(ev("b", RoadEventKind.SPEED_BUMP, 40.0)))
+        assertEquals(listOf("조명:REAR_RIGHT:ffffb300", "조명:REAR_RIGHT:ffffb300"), r.calls)
+        e.onEvents(emptyList())
+        assertEquals("조명:REAR_RIGHT:ff00e5ff", r.calls.last())
+    }
+
+    @Test
+    fun 끝내면_바꾼_조명을_돌리고_늦게_온_일은_하지_않는다() {
+        val r = Recorder().apply { holdSpeech = true }
+        val e = ForecastEngine(card(), r, r)
+        e.onEvents(listOf(ev("t", RoadEventKind.TUNNEL, 40.0)))
+        e.close()
+        r.finishSpeech()
+        e.onEvents(listOf(ev("c", RoadEventKind.CONSTRUCTION, 40.0)))
+        assertEquals(
+            listOf("말:곧 터널이에요. 어두워져요.", "소리:TUNNEL", "조명:REAR_RIGHT:ff2979ff", "조명:REAR_RIGHT:ff00e5ff"),
+            r.calls,
+        )
     }
 
     @Test

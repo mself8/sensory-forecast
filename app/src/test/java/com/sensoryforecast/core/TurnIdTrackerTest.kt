@@ -39,4 +39,21 @@ class TurnIdTrackerTest {
         val after = t.assign(listOf("ROUNDABOUT:" to 380.0))
         assertEquals(first[1], after[0])
     }
+
+    @Test
+    fun 앞_안내가_지나도_뒤_안내는_자기_ID를_지킨다() {
+        val t = TurnIdTracker()
+        val first = t.assign(listOf("ROUNDABOUT:" to 10.0, "ROUNDABOUT:" to 65.0))
+        val after = t.assign(listOf("ROUNDABOUT:" to 37.0))
+        assertEquals(first[1], after[0])
+    }
+
+    @Test
+    fun 경로가_바뀌면_가까이_생긴_안내도_새_ID다() {
+        val t = TurnIdTracker()
+        val before = t.assign(listOf("TOLL:" to 200.0))
+        t.reset()
+        val after = t.assign(listOf("TOLL:" to 50.0))
+        assertNotEquals(before, after)
+    }
 }

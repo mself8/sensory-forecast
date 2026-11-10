@@ -100,7 +100,7 @@
 |---|---|
 | 창문 닫기 | Window Position, Window Lock |
 | 내기 순환, 바람 세기 | Climate 영역의 Air Recirculation, Fan Speed. 바람 세기는 0~8이고 좌석을 고를 수 없습니다 |
-| 조명 색 | Ambient Color, Ambient Brightness. 색은 Cyan, Blue, Purple, White 네 가지뿐이고 좌석을 고를 수 없습니다 |
+| 조명 색 | Ambient Color, Ambient Brightness. 콘솔에서 고를 수 있는 색은 Cyan, Blue, Purple, White 네 가지이고 좌석을 고를 수 없습니다. SDK로 보낸 주황, 초록 같은 다른 색도 콘솔 상태 값에는 그대로 들어갔습니다 |
 | 좌석 점유 | Seat Occupancy |
 | 벨트 | 좌석별 벨트 카드가 없습니다. 아래 확인 필요 항목을 보세요 |
 

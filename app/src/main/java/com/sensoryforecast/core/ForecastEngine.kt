@@ -5,7 +5,7 @@ package com.sensoryforecast.core
  * 차 SDK를 직접 부르지 않고 Announcer와 CabinControl 약속만 씁니다.
  *
  * 알림은 두 번에 나눕니다. 설계 문서의 "말은 조금 일찍, 효과음과 조명은 직전에"를 따릅니다.
- * 1. 말과 차 안 바꾸기: 사건까지 [voiceWithinMeters] 이하일 때. 창문은 말한 뒤에 닫습니다.
+ * 1. 말과 차 안 바꾸기: 사건까지 [voiceWithinMeters] 이하일 때. 창문은 말이 끝난 뒤에 닫습니다.
  * 2. 효과음과 조명: 사건까지 [cueWithinMeters] 이하일 때.
  *
  * 내비 데이터에 차 속도가 없어 시간 대신 거리로 정합니다. 150m는 시속 54km에서 약 10초 전입니다.
@@ -26,20 +26,32 @@ class ForecastEngine(
     private val spokenIds = mutableSetOf<String>()
     private val cuedIds = mutableSetOf<String>()
 
-    /** 조명을 바꾸게 한 사건들입니다. 모두 지나가면 아이 카드의 평소 색으로 돌립니다. */
+    /** 조명을 바꾸게 한 사건들입니다. 모두 목록에서 사라지면 아이 카드의 평소 색으로 돌립니다. */
     private val lightHeldBy = mutableSetOf<String>()
+    private var lightChanged = false
+    private var closed = false
 
     fun onEvents(events: List<RoadEvent>) {
+        if (closed) return
+        if (!paused) announce(events.filter { it.kind in card.alertKinds })
         restoreLightIfPassed(events)
-        if (paused) return
+    }
 
-        val wanted = events.filter { it.kind in card.alertKinds }
+    /** 예보를 끝낼 때 부릅니다. 바꾼 조명을 평소 색으로 돌리고, 이후 들어오는 일은 하지 않습니다. */
+    fun close() {
+        if (lightChanged) cabin.setSeatLight(card.seat, card.lightColorArgb)
+        lightChanged = false
+        closed = true
+    }
 
+    private fun announce(wanted: List<RoadEvent>) {
         dueGroups(wanted, voiceWithinMeters, spokenIds, bundleWithinMeters)?.let { groups ->
+            val changeCabin = { if (!closed) groups.forEach { adjustCabin(it.kind) } }
             if (CueMode.VOICE in card.cueModes) {
-                announcer.speak(groups.map { phraseFor(it.kind, it.ids.size) }.distinct().joinToString(" "))
+                announcer.speak(groups.map { phraseFor(it.kind, it.ids.size) }.distinct().joinToString(" "), changeCabin)
+            } else {
+                changeCabin()
             }
-            groups.forEach { adjustCabin(it.kind) }
         }
 
         dueGroups(wanted, cueWithinMeters, cuedIds, bundle = 0.0)?.let { groups ->
@@ -48,6 +60,7 @@ class ForecastEngine(
             if (CueMode.LIGHT in card.cueModes) {
                 cabin.setSeatLight(card.seat, lightColorFor(nearest.kind.sense))
                 lightHeldBy += groups.flatMap { it.ids }
+                lightChanged = true
             }
         }
     }
@@ -89,11 +102,14 @@ class ForecastEngine(
         }
     }
 
+    /** 같은 목록에서 새 조명을 켰다면 그 사건이 아직 목록에 있으므로 돌리지 않습니다. 그래서 깜빡이지 않습니다. */
     private fun restoreLightIfPassed(events: List<RoadEvent>) {
-        if (lightHeldBy.isEmpty()) return
-        val upcoming = events.filter { it.distanceMeters > 0 }.map { it.id }.toSet()
-        lightHeldBy.retainAll(upcoming)
-        if (lightHeldBy.isEmpty()) cabin.setSeatLight(card.seat, card.lightColorArgb)
+        if (!lightChanged) return
+        lightHeldBy.retainAll(events.map { it.id }.toSet())
+        if (lightHeldBy.isEmpty()) {
+            cabin.setSeatLight(card.seat, card.lightColorArgb)
+            lightChanged = false
+        }
     }
 
     companion object {

@@ -31,6 +31,7 @@ class ForecastService : Service() {
 
     private val main = Handler(Looper.getMainLooper())
     private var source: RoadEventSource? = null
+    private var engine: ForecastEngine? = null
     private var announcer: PleosAnnouncer? = null
     private var cabin: PleosCabinControl? = null
 
@@ -48,12 +49,14 @@ class ForecastService : Service() {
         goForeground(if (demo) "시험 주행으로 예보 중" else "내비와 함께 예보 중")
         val a = PleosAnnouncer(this).also { announcer = it }
         val c = PleosCabinControl(this).also { cabin = it }
-        val engine = ForecastEngine(DEFAULT_CARD, a, c)
-        source = (if (demo) DemoRoadEventSource(main) else PleosRoadEventSource(this)).also { s ->
+        val e = ForecastEngine(DEFAULT_CARD, a, c).also { engine = it }
+        source = (if (demo) DemoRoadEventSource(main) else PleosRoadEventSource(this, main)).also { s ->
             s.start { events ->
                 main.post {
+                    // 멈추거나 다시 시작한 뒤에 늦게 도착한 목록은 버립니다.
+                    if (source !== s) return@post
                     Log.d(TAG, "사건 ${events.joinToString { "${it.kind}@${it.distanceMeters.toInt()}m" }}")
-                    engine.onEvents(events)
+                    e.onEvents(events)
                 }
             }
         }
@@ -62,10 +65,13 @@ class ForecastService : Service() {
 
     private fun stopForecast() {
         source?.stop()
-        announcer?.release()
-        cabin?.release()
         source = null
+        // 바뀐 조명을 평소 색으로 돌린 뒤 차 연결을 닫습니다. 차 제어는 비동기라 조금 기다립니다.
+        engine?.close()
+        engine = null
+        announcer?.release()
         announcer = null
+        cabin?.let { c -> main.postDelayed({ c.release() }, CABIN_RELEASE_DELAY_MILLIS) }
         cabin = null
     }
 
@@ -102,6 +108,7 @@ class ForecastService : Service() {
         private const val TAG = "SensoryForecast"
         private const val CHANNEL = "forecast"
         private const val NOTIFICATION_ID = 1
+        private const val CABIN_RELEASE_DELAY_MILLIS = 1000L
 
         /** 아이 카드 화면이 생기기 전까지 쓰는 기본 카드입니다. */
         val DEFAULT_CARD = ChildCard(

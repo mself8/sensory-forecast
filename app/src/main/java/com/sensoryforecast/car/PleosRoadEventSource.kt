@@ -1,6 +1,7 @@
 package com.sensoryforecast.car
 
 import android.content.Context
+import android.os.Handler
 import android.util.Log
 import ai.pleos.playground.navi.constants.CautionPointType
 import ai.pleos.playground.navi.constants.TurnType
@@ -16,8 +17,9 @@ import com.sensoryforecast.core.TurnIdTracker
 /**
  * Pleos 내비가 아는 앞길 사건을 RoadEvent로 바꿔 넘깁니다.
  * 주의 지점과 회전 안내는 따로 오므로, 둘 중 하나가 바뀔 때마다 합친 목록을 넘깁니다.
+ * NaviHelper는 바인더 스레드에서 콜백을 부르므로, 상태는 [handler]의 스레드에서만 바꿉니다.
  */
-class PleosRoadEventSource(context: Context) : RoadEventSource {
+class PleosRoadEventSource(context: Context, private val handler: Handler) : RoadEventSource {
 
     private val navi = NaviHelper(context.applicationContext)
     private val turnIds = TurnIdTracker()
@@ -27,21 +29,29 @@ class PleosRoadEventSource(context: Context) : RoadEventSource {
 
     private val listener = object : NaviHelperEventListener {
         override fun onCautionPointInfo(list: List<CautionPoint>) {
-            cautions = list.mapNotNull { p ->
-                cautionKind(p.type)?.let { RoadEvent("caution:${p.id}", it, p.remainDistance.toDouble()) }
+            handler.post {
+                cautions = list.mapNotNull { p ->
+                    cautionKind(p.type)?.let { RoadEvent("caution:${p.id}", it, p.remainDistance.toDouble()) }
+                }
+                emit()
             }
-            emit()
         }
 
         override fun onTBTInfo(list: List<TBTInfo>) {
-            val known = list.mapNotNull { t -> turnKind(t.type)?.let { t to it } }
-            val ids = turnIds.assign(known.map { (t, _) -> "${t.type.name}:${t.description}" to t.distance })
-            turns = known.mapIndexed { i, (t, kind) -> RoadEvent(ids[i], kind, t.distance) }
-            emit()
+            handler.post {
+                val known = list.mapNotNull { t -> turnKind(t.type)?.let { t to it } }
+                val ids = turnIds.assign(known.map { (t, _) -> "${t.type.name}:${t.description}" to t.distance })
+                turns = known.mapIndexed { i, (t, kind) -> RoadEvent(ids[i], kind, t.distance) }
+                emit()
+            }
         }
 
+        /** 경로가 바뀌면 회전 안내를 새로 받으므로 ID 짝짓기를 처음부터 합니다. */
         override fun onReRouteEnded() {
-            emit(RoadEvent("reroute:${System.currentTimeMillis()}", RoadEventKind.REROUTE, 0.0))
+            handler.post {
+                turnIds.reset()
+                emit(RoadEvent("reroute:${System.currentTimeMillis()}", RoadEventKind.REROUTE, 0.0))
+            }
         }
     }
 

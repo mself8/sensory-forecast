@@ -13,7 +13,8 @@ interface RoadEventSource {
 
 /** 아이에게 알립니다. */
 interface Announcer {
-    fun speak(text: String)
+    /** 말이 끝나면 [onDone]을 부릅니다. 창문처럼 말한 뒤에 할 일을 넘깁니다. */
+    fun speak(text: String, onDone: () -> Unit = {})
     fun playCue(kind: RoadEventKind)
 }
 
