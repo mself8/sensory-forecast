@@ -14,6 +14,8 @@ package com.sensoryforecast.core
  * 속도를 아직 모르면 [fallbackVoiceMeters]와 [fallbackCueMeters]를 씁니다.
  * 거의 서 있을 때는 시속 10km로 셉니다. 막힌 길에서 몇 분 먼저 말하지 않게 하려는 것입니다.
  *
+ * 터널 앞에서 켠 내기 순환은 그 터널의 출구 사건이 지나가면 되돌립니다. 출구를 모르는 터널은 그대로 둡니다.
+ *
  * @param bundleWithinMeters 말할 때 첫 사건 뒤 이 거리 안의 같은 종류 사건을 묶어서 셉니다.
  * @param clock 밀리초 시계입니다. 시험에서 시간을 직접 움직이려고 받습니다.
  */
@@ -41,12 +43,18 @@ class ForecastEngine(
     private var lightChanged = false
     private var closed = false
 
+    /** 내기 순환을 켜게 한 터널의 출구 사건들입니다. 모두 지나가면 내기 순환을 되돌립니다. */
+    private val airHeldBy = mutableSetOf<String>()
+    private var lastIds: Set<String> = emptySet()
+
     fun onEvents(events: List<RoadEvent>) {
         if (closed) return
         val now = clock()
+        lastIds = events.map { it.id }.toSet()
         speed.update(events, now)
-        if (!paused) announce(events.filter { it.kind in card.alertKinds }, speed.metersPerSecond(now))
+        if (!paused) announce(events.filter { it.kind.announced && it.kind in card.alertKinds }, speed.metersPerSecond(now))
         restoreLightIfPassed(events)
+        restoreAirIfExited()
     }
 
     /** 예보를 끝낼 때 부릅니다. 바꾼 조명을 평소 색으로 돌리고, 이후 들어오는 일은 하지 않습니다. */
@@ -61,7 +69,7 @@ class ForecastEngine(
         val cueWithin = leadMeters(metersPerSecond, cueLeadSeconds, fallbackCueMeters)
 
         dueGroups(wanted, voiceWithin, spokenIds, bundleWithinMeters)?.let { groups ->
-            val changeCabin = { if (!closed) groups.forEach { adjustCabin(it.kind) } }
+            val changeCabin = { if (!closed) groups.forEach { adjustCabin(it) } }
             if (CueMode.VOICE in card.cueModes) {
                 announcer.speak(groups.map { phraseFor(it.kind, it.ids.size) }.distinct().joinToString(" "), changeCabin)
             } else {
@@ -105,11 +113,13 @@ class ForecastEngine(
         return groups
     }
 
-    private fun adjustCabin(kind: RoadEventKind) {
-        when (kind) {
+    private fun adjustCabin(group: Group) {
+        when (group.kind) {
             RoadEventKind.TUNNEL, RoadEventKind.UNDERPASS -> {
                 cabin.closeWindow(card.seat)
                 cabin.setRecirculation(true)
+                // 말이 끝난 뒤라 지금 받은 목록에 출구가 있는 터널만 붙잡습니다.
+                airHeldBy += group.ids.map(::exitIdOf).filter { it in lastIds }
             }
             RoadEventKind.RAILROAD_CROSSING -> cabin.closeWindow(card.seat)
             RoadEventKind.CONSTRUCTION -> {
@@ -129,6 +139,12 @@ class ForecastEngine(
             cabin.setSeatLight(card.seat, card.lightColorArgb)
             lightChanged = false
         }
+    }
+
+    private fun restoreAirIfExited() {
+        if (airHeldBy.isEmpty()) return
+        airHeldBy.retainAll(lastIds)
+        if (airHeldBy.isEmpty()) cabin.restoreRecirculation()
     }
 
     companion object {
@@ -156,6 +172,7 @@ fun phraseFor(kind: RoadEventKind, count: Int = 1): String = when (kind) {
     RoadEventKind.REST_AREA -> "곧 휴게소에 들러요."
     RoadEventKind.ARRIVAL -> "곧 내려요."
     RoadEventKind.REROUTE -> "길이 바뀌었어요."
+    RoadEventKind.TUNNEL_EXIT -> "" // 알리지 않는 사건이라 쓰이지 않습니다.
 }
 
 private fun koreanCount(n: Int): String = when (n) {

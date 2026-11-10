@@ -23,6 +23,9 @@ interface CabinControl {
     fun closeWindow(seat: SeatPosition)
     fun setRecirculation(on: Boolean)
 
+    /** 내기 순환을 이 앱이 처음 바꾸기 전 상태로 돌립니다. 바꾼 적이 없으면 그대로 둡니다. */
+    fun restoreRecirculation()
+
     /** 바람이 [level]보다 셀 때만 [level]로 낮춥니다. */
     fun lowerFanTo(level: Int)
     fun setSeatLight(seat: SeatPosition, colorArgb: Int)

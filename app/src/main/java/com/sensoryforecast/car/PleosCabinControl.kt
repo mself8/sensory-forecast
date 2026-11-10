@@ -3,6 +3,7 @@ package com.sensoryforecast.car
 import android.content.Context
 import android.util.Log
 import ai.pleos.playground.vehicle.Vehicle
+import ai.pleos.playground.vehicle.api.HVAC
 import ai.pleos.playground.vehicle.api.model.area.SeatArea
 import ai.pleos.playground.vehicle.api.model.area.WindowArea
 import ai.pleos.playground.vehicle.constant.area.SeatValue
@@ -18,6 +19,10 @@ class PleosCabinControl(context: Context) : CabinControl {
 
     private val vehicle = Vehicle(context.applicationContext).also { it.initialize() }
 
+    /** 이 앱이 내기 순환을 처음 바꾸기 전 상태입니다. 되돌린 뒤에는 비웁니다. */
+    @Volatile
+    private var recirculationBefore: Boolean? = null
+
     override fun closeWindow(seat: SeatPosition) {
         Log.i(TAG, "창문 닫기: $seat")
         vehicle.getWindow().setWindowPosition(
@@ -29,14 +34,34 @@ class PleosCabinControl(context: Context) : CabinControl {
 
     override fun setRecirculation(on: Boolean) {
         Log.i(TAG, "내기 순환: $on")
+        withRecirculationArea { hvac, area ->
+            if (recirculationBefore != null) {
+                hvac.setHvacRecirculation(area, on, { _, value -> Log.i(TAG, "내기 결과: $value") }, ::failed)
+                return@withRecirculationArea
+            }
+            hvac.getHvacRecirculationState(area, { now ->
+                // 상태를 모르면 보통 쓰는 외기로 봅니다.
+                if (recirculationBefore == null) recirculationBefore = now ?: false
+                Log.i(TAG, "내기 순환 바꾸기 전: $recirculationBefore")
+                hvac.setHvacRecirculation(area, on, { _, value -> Log.i(TAG, "내기 결과: $value") }, ::failed)
+            }, ::failed)
+        }
+    }
+
+    override fun restoreRecirculation() {
+        val before = recirculationBefore ?: return
+        recirculationBefore = null
+        Log.i(TAG, "내기 순환 되돌리기: $before")
+        withRecirculationArea { hvac, area ->
+            hvac.setHvacRecirculation(area, before, { _, value -> Log.i(TAG, "되돌린 결과: $value") }, ::failed)
+        }
+    }
+
+    private fun withRecirculationArea(block: (HVAC, SeatArea) -> Unit) {
         val hvac = vehicle.getHVAC()
         hvac.checkHvacRecirculationCapabilities({ _, areas ->
             val area = areas.firstOrNull()
-            if (area == null) {
-                Log.w(TAG, "내기 순환 지원 영역 없음")
-                return@checkHvacRecirculationCapabilities
-            }
-            hvac.setHvacRecirculation(area, on, { _, value -> Log.i(TAG, "내기 결과: $value") }, ::failed)
+            if (area == null) Log.w(TAG, "내기 순환 지원 영역 없음") else block(hvac, area)
         }, ::failed)
     }
 

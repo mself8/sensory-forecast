@@ -4,6 +4,7 @@ import android.os.Handler
 import com.sensoryforecast.core.RoadEvent
 import com.sensoryforecast.core.RoadEventKind
 import com.sensoryforecast.core.RoadEventSource
+import com.sensoryforecast.core.exitIdOf
 
 /**
  * 시험용 길 위 사건입니다. 내비 없이 정해진 순서로 사건을 흘려보냅니다.
@@ -21,6 +22,7 @@ class DemoRoadEventSource(
         RoadEvent("demo:bump-1", RoadEventKind.SPEED_BUMP, 300.0),
         RoadEvent("demo:bump-2", RoadEventKind.SPEED_BUMP, 340.0),
         RoadEvent("demo:tunnel", RoadEventKind.TUNNEL, 800.0),
+        RoadEvent(exitIdOf("demo:tunnel"), RoadEventKind.TUNNEL_EXIT, 1100.0), // 300m 터널
         RoadEvent("demo:construction", RoadEventKind.CONSTRUCTION, 1400.0),
         RoadEvent("demo:arrival", RoadEventKind.ARRIVAL, 2000.0),
     )

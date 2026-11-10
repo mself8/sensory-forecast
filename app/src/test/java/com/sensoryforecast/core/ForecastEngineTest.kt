@@ -21,6 +21,7 @@ class ForecastEngineTest {
         override fun playCue(kind: RoadEventKind) { calls += "소리:$kind" }
         override fun closeWindow(seat: SeatPosition) { calls += "창문닫기:$seat" }
         override fun setRecirculation(on: Boolean) { calls += "내기:$on" }
+        override fun restoreRecirculation() { calls += "내기되돌림" }
         override fun lowerFanTo(level: Int) { calls += "바람:$level" }
         override fun setSeatLight(seat: SeatPosition, colorArgb: Int) { calls += "조명:$seat:${Integer.toHexString(colorArgb)}" }
     }
@@ -225,5 +226,36 @@ class ForecastEngineTest {
         now += 1000
         e.onEvents(listOf(ev("toll", RoadEventKind.TOLLGATE, 900.0), ev("bump", RoadEventKind.SPEED_BUMP, 230.0)))
         assertEquals(listOf("말:곧 덜컹해요."), r.calls)
+    }
+
+    @Test
+    fun 터널_출구를_지나면_내기_순환을_되돌린다() {
+        val r = Recorder()
+        val e = ForecastEngine(card(modes = setOf(CueMode.VOICE)), r, r, clock = { now })
+        val exit = exitIdOf("t")
+        e.onEvents(listOf(ev("t", RoadEventKind.TUNNEL, 140.0), ev(exit, RoadEventKind.TUNNEL_EXIT, 440.0)))
+        assertEquals(listOf("말:곧 터널이에요. 어두워져요.", "창문닫기:REAR_RIGHT", "내기:true"), r.calls)
+        e.onEvents(listOf(ev(exit, RoadEventKind.TUNNEL_EXIT, 40.0)))
+        assertEquals(3, r.calls.size)
+        e.onEvents(emptyList())
+        assertEquals("내기되돌림", r.calls.last())
+        assertEquals(4, r.calls.size)
+    }
+
+    @Test
+    fun 출구를_모르는_터널은_내기_순환을_그대로_둔다() {
+        val r = Recorder()
+        val e = ForecastEngine(card(modes = setOf(CueMode.VOICE)), r, r, clock = { now })
+        e.onEvents(listOf(ev("t", RoadEventKind.TUNNEL, 140.0)))
+        e.onEvents(emptyList())
+        assertEquals(listOf("말:곧 터널이에요. 어두워져요.", "창문닫기:REAR_RIGHT", "내기:true"), r.calls)
+    }
+
+    @Test
+    fun 터널_출구는_아이에게_알리지_않는다() {
+        val r = Recorder()
+        ForecastEngine(card(), r, r, clock = { now })
+            .onEvents(listOf(ev(exitIdOf("t"), RoadEventKind.TUNNEL_EXIT, 30.0)))
+        assertTrue(r.calls.isEmpty())
     }
 }

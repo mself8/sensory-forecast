@@ -44,6 +44,12 @@ class MainActivity : Activity() {
             addView(button("내비와 함께 시작", ForecastService.ACTION_START_NAVI, "내비와 함께 예보 중이에요"))
             addView(button("시험 주행 시작", ForecastService.ACTION_START_DEMO, "시험 주행으로 예보 중이에요"))
             addView(button("멈추기", ForecastService.ACTION_STOP, "예보가 꺼져 있어요"))
+            // 터널 길이 자료의 출처 표시입니다. ODbL이 요구합니다.
+            addView(TextView(context).apply {
+                text = "터널 자료 © OpenStreetMap contributors"
+                textSize = 14f
+                gravity = Gravity.CENTER
+            })
         })
     }
 }
