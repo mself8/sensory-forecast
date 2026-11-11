@@ -57,6 +57,8 @@
 
 <sub>Pleos Connect 에뮬레이터에서 연 아이 카드 화면입니다.</sub>
 
+**시연 영상**: [docs/video/sensory-forecast-demo.mp4](docs/video/sensory-forecast-demo.mp4), 110초. 에뮬레이터 시험 주행에서 과속방지턱 · 터널 · 공사 구간 · 도착을 차례로 알리고, 가상 콘솔에서 창문 · 내기 순환 · 바람 · 실내 조명이 바뀌는 모습을 함께 녹화했습니다. 앱이 하는 말은 자막으로 보여 주고, 효과음은 앱이 낸 소리 그대로 넣었습니다.
+
 ## 구조도
 
 ![역할별 흐름: 부모 · 아이 · 앱 · 차](docs/img/overview.png)
@@ -123,6 +125,9 @@ docs/
   img/                   README 그림
 tools/
   pleos_api.py           Pleos API 상세 문서를 글자로 읽는 도구
+  make_cues.py           효과음 다섯 개 합성
+  osm_tunnels.py         OpenStreetMap에서 국내 터널 입구 목록 만들기
+  demo_video/            시연 영상 녹화와 합성
   readme_images/         README 배너와 구조도 만들기
 gradle/libs.versions.toml  SDK와 도구 버전
 ```
