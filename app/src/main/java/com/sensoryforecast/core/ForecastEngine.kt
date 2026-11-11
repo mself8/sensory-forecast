@@ -18,6 +18,7 @@ package com.sensoryforecast.core
  *
  * @param bundleWithinMeters 말할 때 첫 사건 뒤 이 거리 안의 같은 종류 사건을 묶어서 셉니다.
  * @param clock 밀리초 시계입니다. 시험에서 시간을 직접 움직이려고 받습니다.
+ * @param onForewarned 자극 묶음 하나를 미리 알릴 때마다 부릅니다. 이동 기록이 셉니다.
  */
 class ForecastEngine(
     private val card: ChildCard,
@@ -29,6 +30,7 @@ class ForecastEngine(
     private val fallbackCueMeters: Double = 50.0,
     private val bundleWithinMeters: Double = 100.0,
     private val clock: () -> Long = { System.nanoTime() / 1_000_000 },
+    private val onForewarned: () -> Unit = {},
 ) {
     private val speed = SpeedEstimator()
 
@@ -69,6 +71,7 @@ class ForecastEngine(
         val cueWithin = leadMeters(metersPerSecond, cueLeadSeconds, fallbackCueMeters)
 
         dueGroups(wanted, voiceWithin, spokenIds, bundleWithinMeters)?.let { groups ->
+            groups.forEach { onForewarned() }
             val changeCabin = { if (!closed) groups.forEach { adjustCabin(it) } }
             if (CueMode.VOICE in card.cueModes) {
                 announcer.speak(groups.map { phraseFor(it.kind, it.ids.size) }.distinct().joinToString(" "), changeCabin)

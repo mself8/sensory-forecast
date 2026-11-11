@@ -3,6 +3,8 @@ package com.sensoryforecast
 import android.app.Activity
 import android.graphics.Typeface
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
@@ -17,22 +19,34 @@ import com.sensoryforecast.core.CueMode
 import com.sensoryforecast.core.RoadEventKind
 import com.sensoryforecast.core.SeatPosition
 import com.sensoryforecast.core.Sense
+import com.sensoryforecast.core.TripRecord
 import com.sensoryforecast.ui.ChildCardStore
+import com.sensoryforecast.ui.TripStore
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * 차가 서 있을 때 아이 카드를 정하고 예보를 켜고 끄는 화면입니다.
  * 주행 중에는 화면 조작이 막히므로, 예보는 ForecastService가 음성·소리·조명으로 전합니다.
  * 왼쪽은 아이 카드, 오른쪽은 시작과 멈추기입니다. 카드는 바꿀 때마다 저장하고, 예보를 시작할 때 읽습니다.
+ * 멈추면 이동 기록이 저장되고, 부모가 오늘 이동을 1~5점으로 매깁니다. 아래에 지난 이동 세 개를 보여 줍니다.
  */
 class MainActivity : Activity() {
 
     private lateinit var store: ChildCardStore
     private lateinit var card: ChildCard
+    private lateinit var trips: TripStore
+    private lateinit var ratingRow: LinearLayout
+    private lateinit var history: TextView
+    private var ratingFor: Long? = null
+    private val main = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         store = ChildCardStore(this)
         card = store.load()
+        trips = TripStore(this)
 
         setContentView(LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -100,6 +114,8 @@ class MainActivity : Activity() {
                 val intent = ForecastService.intent(this@MainActivity, action)
                 if (action == ForecastService.ACTION_STOP) startService(intent) else startForegroundService(intent)
                 status.text = done
+                // 서비스가 멈추며 기록을 쓴 뒤에 다시 읽습니다.
+                main.postDelayed(::refreshTrips, RECORD_DELAY_MILLIS)
             }
         }
 
@@ -108,8 +124,50 @@ class MainActivity : Activity() {
         addView(button("내비와 함께 시작", ForecastService.ACTION_START_NAVI, "내비와 함께 예보 중이에요"))
         addView(button("시험 주행 시작", ForecastService.ACTION_START_DEMO, "시험 주행으로 예보 중이에요"))
         addView(button("멈추기", ForecastService.ACTION_STOP, "예보가 꺼져 있어요"))
+        ratingRow = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 24, 0, 0)
+            visibility = View.GONE
+            addView(text("오늘 이동은 어땠나요?", 22f))
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                (1..5).forEach { n ->
+                    addView(Button(context).apply {
+                        text = "${n}점"
+                        textSize = 20f
+                        setOnClickListener { ratingFor?.let { trips.rate(it, n) }; refreshTrips() }
+                    }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                }
+            })
+        }
+        addView(ratingRow)
+        addView(text("지난 이동", 20f, bold = true).apply { setPadding(0, 24, 0, 4) })
+        history = text("아직 기록이 없어요", 18f)
+        addView(history)
         // 터널 길이 자료의 출처 표시입니다. ODbL이 요구합니다.
-        addView(text("터널 자료 © OpenStreetMap contributors", 14f).apply { gravity = Gravity.CENTER })
+        addView(text("터널 자료 © OpenStreetMap contributors", 14f).apply { gravity = Gravity.CENTER; setPadding(0, 24, 0, 0) })
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshTrips()
+    }
+
+    /** 가장 최근 이동이 평가 전이고 막 끝났으면 평가 줄을 보여 줍니다. */
+    private fun refreshTrips() {
+        val all = trips.all()
+        val last = all.lastOrNull()
+        val fresh = last != null && last.rating == null && System.currentTimeMillis() - last.endedAtMillis < RATING_WINDOW_MILLIS
+        ratingFor = if (fresh) last!!.startedAtMillis else null
+        ratingRow.visibility = if (fresh) View.VISIBLE else View.GONE
+        history.text = if (all.isEmpty()) "아직 기록이 없어요" else all.takeLast(3).reversed().joinToString("\n") { describe(it) }
+    }
+
+    private fun describe(t: TripRecord): String {
+        val minutes = (t.endedAtMillis - t.startedAtMillis) / 60_000
+        val length = if (minutes < 1) "1분 미만" else "${minutes}분"
+        val rating = t.rating?.let { "평가 ${it}점" } ?: "평가 전"
+        return "${DATE.format(Date(t.startedAtMillis))} · $length · 알린 자극 ${t.forewarned} · 벨트 풀림 ${t.beltUnbuckled} · $rating"
     }
 
     private fun update(next: ChildCard) {
@@ -128,6 +186,9 @@ class MainActivity : Activity() {
     private companion object {
         const val MATCH = LinearLayout.LayoutParams.MATCH_PARENT
         const val BODY = 22f
+        const val RECORD_DELAY_MILLIS = 800L
+        const val RATING_WINDOW_MILLIS = 30 * 60_000L
+        val DATE = SimpleDateFormat("M월 d일 HH:mm", Locale.KOREA)
 
         val SEATS = listOf(
             SeatPosition.REAR_RIGHT to "뒷좌석 오른쪽",

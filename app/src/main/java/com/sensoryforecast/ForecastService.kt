@@ -13,12 +13,15 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import com.sensoryforecast.car.DemoRoadEventSource
+import com.sensoryforecast.car.PleosBeltWatcher
 import com.sensoryforecast.car.PleosAnnouncer
 import com.sensoryforecast.car.PleosCabinControl
 import com.sensoryforecast.car.PleosRoadEventSource
 import com.sensoryforecast.core.ForecastEngine
 import com.sensoryforecast.core.RoadEventSource
+import com.sensoryforecast.core.TripCounter
 import com.sensoryforecast.ui.ChildCardStore
+import com.sensoryforecast.ui.TripStore
 
 /**
  * 달리는 동안 예보를 맡는 서비스입니다.
@@ -31,6 +34,8 @@ class ForecastService : Service() {
     private var engine: ForecastEngine? = null
     private var announcer: PleosAnnouncer? = null
     private var cabin: PleosCabinControl? = null
+    private var trip: TripCounter? = null
+    private var belt: PleosBeltWatcher? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -48,7 +53,9 @@ class ForecastService : Service() {
         val c = PleosCabinControl(this).also { cabin = it }
         val card = ChildCardStore(this).load()
         Log.i(TAG, "아이 카드: ${card.seat}, 알릴 사건 ${card.alertKinds.size}종, 방식 ${card.cueModes}")
-        val e = ForecastEngine(card, a, c).also { engine = it }
+        val t = TripCounter(System.currentTimeMillis()).also { trip = it }
+        belt = PleosBeltWatcher(this, main, card.seat).also { w -> w.start { buckled -> trip?.onBelt(buckled) } }
+        val e = ForecastEngine(card, a, c, onForewarned = { t.onForewarned() }).also { engine = it }
         source = (if (demo) DemoRoadEventSource(main) else PleosRoadEventSource(this, main)).also { s ->
             s.start { events ->
                 main.post {
@@ -65,6 +72,14 @@ class ForecastService : Service() {
     private fun stopForecast() {
         source?.stop()
         source = null
+        belt?.stop()
+        belt = null
+        trip?.let { t ->
+            val record = t.finish(System.currentTimeMillis())
+            TripStore(this).add(record)
+            Log.i(TAG, "이동 기록: 알린 자극 ${record.forewarned}, 벨트 풀림 ${record.beltUnbuckled}")
+        }
+        trip = null
         // 바뀐 조명을 평소 색으로 돌린 뒤 차 연결을 닫습니다. 차 제어는 비동기라 조금 기다립니다.
         engine?.close()
         engine = null

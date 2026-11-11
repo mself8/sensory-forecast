@@ -258,4 +258,14 @@ class ForecastEngineTest {
             .onEvents(listOf(ev(exitIdOf("t"), RoadEventKind.TUNNEL_EXIT, 30.0)))
         assertTrue(r.calls.isEmpty())
     }
+
+    @Test
+    fun 미리_알린_자극_묶음마다_기록에_알린다() {
+        var count = 0
+        val e = ForecastEngine(card(), Recorder(), Recorder(), clock = { now }, onForewarned = { count++ })
+        e.onEvents(listOf(ev("a", RoadEventKind.SPEED_BUMP, 120.0), ev("b", RoadEventKind.SPEED_BUMP, 160.0), ev("t", RoadEventKind.TUNNEL, 140.0)))
+        e.onEvents(listOf(ev("a", RoadEventKind.SPEED_BUMP, 120.0), ev("b", RoadEventKind.SPEED_BUMP, 160.0), ev("t", RoadEventKind.TUNNEL, 140.0)))
+        // 방지턱 둘은 한 묶음, 터널은 다른 묶음입니다. 같은 자극은 두 번 세지 않습니다.
+        assertEquals(2, count)
+    }
 }

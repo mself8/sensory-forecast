@@ -176,7 +176,7 @@ sources = re.search(r"^## 별지: 출처\n(.*)", md, flags=re.S | re.M).group(1)
 fill = {i: blocks(sections[i]) for i in range(1, 9)}
 fill[3] = fill[3].replace(
     para("새로운 경험", bold=True, color=HEAD_COLOR, before=120, after=40),
-    picture("screen-child-card.png") + caption("에뮬레이터의 아이 카드 화면. 앱 왼쪽에서 아이 자리, 미리 알릴 자극, 알리는 방식을 고릅니다.")
+    picture("screen-child-card.png") + caption("에뮬레이터의 시작 화면. 앱 왼쪽에서 아이 카드를 정하고, 오른쪽 아래에서 지난 이동의 기록과 부모 평가를 봅니다.")
     + para("새로운 경험", bold=True, color=HEAD_COLOR, before=120, after=40), 1)
 fill[5] = picture("overview.png") + caption("역할별 흐름. 부모가 아이 카드를 정하면 앱이 내비 사건을 골라 알리고 차 안을 바꾸며, 기록으로 카드를 고칩니다.") + fill[5]
 fill[7] = fill[7] + para("출처", bold=True, color=HEAD_COLOR, before=160, after=40) + "".join(
