@@ -21,6 +21,7 @@ APP_NAME = "감각 예보"
 
 SIZE = 20          # 10pt
 HEAD_COLOR = "1F4E79"
+STATUS_COLORS = {"구현": "2E7D32", "최종 PT까지": "B25E00"}
 CELL_EMU = 6_100_000
 
 doc_path = ROOT / "word/document.xml"
@@ -102,18 +103,24 @@ def runs(text: str, bold=False, color=None, size=SIZE) -> str:
     for part in re.split(r"(\*\*[^*]+\*\*|`[^`]+`)", text):
         if not part:
             continue
-        b, mono = bold, False
+        b, mono, c = bold, False, color
         if part.startswith("**"):
             part, b = part[2:-2], True
         elif part.startswith("`"):
-            part, mono = part[1:-1], True
+            part = part[1:-1]
+            if part in STATUS_COLORS:
+                # 구현 여부 표시는 코드 글꼴 대신 색 있는 굵은 글씨로 씁니다.
+                b, c = True, STATUS_COLORS[part]
+                part = f"[{part}]"
+            else:
+                mono = True
         rpr = ""
         if mono:
             rpr += '<w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/>'
         if b:
             rpr += "<w:b/><w:bCs/>"
-        if color:
-            rpr += f'<w:color w:val="{color}"/>'
+        if c:
+            rpr += f'<w:color w:val="{c}"/>'
         rpr += f'<w:sz w:val="{size}"/><w:szCs w:val="{size}"/>'
         out.append(f'<w:r><w:rPr>{rpr}</w:rPr><w:t xml:space="preserve">{escape(part)}</w:t></w:r>')
     return "".join(out)
@@ -169,7 +176,7 @@ sources = re.search(r"^## 별지: 출처\n(.*)", md, flags=re.S | re.M).group(1)
 fill = {i: blocks(sections[i]) for i in range(1, 9)}
 fill[3] = fill[3].replace(
     para("새로운 경험", bold=True, color=HEAD_COLOR, before=120, after=40),
-    picture("screen-child-card.png") + caption("에뮬레이터의 아이 카드 화면. 왼쪽 위 아이 자리, 미리 알릴 자극, 알리는 방식을 고릅니다.")
+    picture("screen-child-card.png") + caption("에뮬레이터의 아이 카드 화면. 앱 왼쪽에서 아이 자리, 미리 알릴 자극, 알리는 방식을 고릅니다.")
     + para("새로운 경험", bold=True, color=HEAD_COLOR, before=120, after=40), 1)
 fill[5] = picture("overview.png") + caption("역할별 흐름. 부모가 아이 카드를 정하면 앱이 내비 사건을 골라 알리고 차 안을 바꾸며, 기록으로 카드를 고칩니다.") + fill[5]
 fill[7] = fill[7] + para("출처", bold=True, color=HEAD_COLOR, before=160, after=40) + "".join(

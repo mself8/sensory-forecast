@@ -80,6 +80,24 @@
 
 ## 시장과 선례
 
+- 18세 미만 자폐성 장애 아동은 2011년 9,089명에서 2024년 28,220명으로 늘었다. 같은 해 18세 미만 아동은 687만 6,330명이다. 보건복지부 자료를 인용한 보도다.
+  - [장애 아동 비율 증가 보도, 머니투데이 2025-05-29](https://www.mt.co.kr/thebio/2025/05/29/2025052914070071324)
+- 유치원생 부모 설문에서 감각 처리 장애로 추정된 비율은 응답하지 않은 가정을 어떻게 보느냐에 따라 5~13%였다.
+  - [유치원생 감각 처리 장애 유병률, 2004](https://doi.org/10.5014/ajot.58.3.287)
+- 전국 특수학교 학생은 2023년 27,901명이다. 서울 특수학교 학생 4,270명 가운데 33%는 통학에 왕복 1시간 이상 걸린다.
+  - [시도별 특수학교 통학 소요시간 보도, 전북일보 2024-07-14](https://www.jjan.kr/article/20240714580075)
+  - [서울 특수학교 통학 현황 보도, 머니투데이 2025-09-07](https://www.mt.co.kr/policy/2025/09/07/2025090511315423004)
+- 현대차그룹은 Pleos Connect를 2026년 5월 그랜저부터 적용하고 2030년까지 약 2천만 대에 넣을 계획이다.
+  - [현대차그룹 Pleos Connect 발표](https://www.hyundaimotorgroup.com/ko/news/hyundai-motor-group-redefines-in-vehicle-experience-with-pleos-connect-next-generation-infotainment-system)
+- 신형 아반떼는 전 트림에 Pleos Connect가 기본이고, 2026년 3분기부터 인도된다.
+  - [디 올 뉴 아반떼 출시 보도, 뉴데일리 2026-08-05](https://biz.newdaily.co.kr/site/data/html/2026/08/05/2026080500107.html)
+- 현대차 2025년 국내 판매는 712,954대로 전체 4,138,180대의 17.2%다. 그랜저 71,775대, 아반떼 79,335대다.
+  - [현대차 2025년 판매 실적](https://www.hyundaimotorgroup.com/ko/news/hyundai-motor-company-sales-4138180-units-2025)
+- 국내 자동차 등록 대수는 2025년 말 2,651만 5천 대다.
+  - [국토교통부 자동차 등록 현황 보도, 세계일보 2026-01-29](https://www.segye.com/newsView/20260129517256)
+- 현대차그룹 일부 최신 모델은 터널에 들어가거나 바깥 공기를 막아야 하는 곳에서 내비 지도 정보로 내기 순환으로 바꾸고 창문을 닫는다.
+  - [현대자동차그룹 내비게이션 업데이트 소개, 2021-04-28](https://www.hyundaimotorgroup.com/ko/story/CONT0000000000002762)
+
 - 미국 질병통제예방센터 2025년 발표로 8세 아동 31명 중 1명이 자폐다.
   - [미국 아동 31명 중 1명 자폐, 2025](https://abc7ny.com/post/estimated-1-31-children-have-autism-diagnosis-rates-increase-us-cdc/16179092/)
 - 국내 발달장애 등록인은 2014년 20만 3,879명에서 2021년 25만 5,207명으로 늘었다.
