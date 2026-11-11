@@ -21,3 +21,20 @@ data class ChildCard(
 
 /** 앱 안에서 쓰는 좌석 위치입니다. 차 SDK의 SeatArea로 바꾸는 일은 car 패키지가 맡습니다. */
 enum class SeatPosition { FRONT_RIGHT, REAR_LEFT, REAR_RIGHT }
+
+/** 저장할 때 쓰는 글자 형태입니다. 이름과 평소 조명 색은 아직 화면에서 바꾸지 않아 저장하지 않습니다. */
+fun ChildCard.toStrings(): Map<String, String> = mapOf(
+    "seat" to seat.name,
+    "kinds" to alertKinds.joinToString(",") { it.name },
+    "modes" to cueModes.joinToString(",") { it.name },
+)
+
+/** 저장된 값이 없거나 모르는 이름이면 [base]의 값을 쓰거나 그 이름만 버립니다. 앱이 바뀌어도 예전 카드를 읽을 수 있게 하려는 것입니다. */
+fun childCardOf(strings: Map<String, String>, base: ChildCard): ChildCard = base.copy(
+    seat = strings["seat"]?.let { s -> SeatPosition.entries.find { it.name == s } } ?: base.seat,
+    alertKinds = strings["kinds"]?.let { namesIn(it, RoadEventKind.entries) } ?: base.alertKinds,
+    cueModes = strings["modes"]?.let { namesIn(it, CueMode.entries) } ?: base.cueModes,
+)
+
+private fun <T : Enum<T>> namesIn(csv: String, all: List<T>): Set<T> =
+    csv.split(',').mapNotNull { n -> all.find { it.name == n } }.toSet()

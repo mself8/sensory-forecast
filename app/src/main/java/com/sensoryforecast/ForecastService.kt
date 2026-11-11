@@ -16,12 +16,9 @@ import com.sensoryforecast.car.DemoRoadEventSource
 import com.sensoryforecast.car.PleosAnnouncer
 import com.sensoryforecast.car.PleosCabinControl
 import com.sensoryforecast.car.PleosRoadEventSource
-import com.sensoryforecast.core.ChildCard
-import com.sensoryforecast.core.CueMode
 import com.sensoryforecast.core.ForecastEngine
-import com.sensoryforecast.core.RoadEventKind
 import com.sensoryforecast.core.RoadEventSource
-import com.sensoryforecast.core.SeatPosition
+import com.sensoryforecast.ui.ChildCardStore
 
 /**
  * 달리는 동안 예보를 맡는 서비스입니다.
@@ -49,7 +46,9 @@ class ForecastService : Service() {
         goForeground(if (demo) "시험 주행으로 예보 중" else "내비와 함께 예보 중")
         val a = PleosAnnouncer(this).also { announcer = it }
         val c = PleosCabinControl(this).also { cabin = it }
-        val e = ForecastEngine(DEFAULT_CARD, a, c).also { engine = it }
+        val card = ChildCardStore(this).load()
+        Log.i(TAG, "아이 카드: ${card.seat}, 알릴 사건 ${card.alertKinds.size}종, 방식 ${card.cueModes}")
+        val e = ForecastEngine(card, a, c).also { engine = it }
         source = (if (demo) DemoRoadEventSource(main) else PleosRoadEventSource(this, main)).also { s ->
             s.start { events ->
                 main.post {
@@ -109,15 +108,6 @@ class ForecastService : Service() {
         private const val CHANNEL = "forecast"
         private const val NOTIFICATION_ID = 1
         private const val CABIN_RELEASE_DELAY_MILLIS = 1000L
-
-        /** 아이 카드 화면이 생기기 전까지 쓰는 기본 카드입니다. */
-        val DEFAULT_CARD = ChildCard(
-            name = "아이",
-            seat = SeatPosition.REAR_RIGHT,
-            alertKinds = RoadEventKind.entries.toSet(),
-            cueModes = CueMode.entries.toSet(),
-            lightColorArgb = 0xFF00E5FF.toInt(),
-        )
 
         fun intent(context: Context, action: String) =
             Intent(context, ForecastService::class.java).setAction(action)
