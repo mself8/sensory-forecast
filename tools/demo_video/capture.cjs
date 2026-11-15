@@ -17,8 +17,20 @@ const seconds = Number(process.argv[2] || 120);
   fs.writeFileSync('capture_ready.txt', String(Date.now()));
   const end = Date.now() + seconds * 1000;
   let n = 0;
+  let drive = null;
   while (Date.now() < end) {
     const t = Date.now();
+    // record.sh가 drive.txt에 쓴 속도로 달립니다. 콘솔 페이지는 차가 움직이는 동안 서버 값 대신 자기 주행 계산을 씁니다.
+    // 계산식은 속도 변화 = 페달 비율 x 19 - 속도 x 0.012 라서, 페달을 속도 x 0.012 / 19로 두면 그 속도를 유지합니다.
+    const want = fs.existsSync('drive.txt') ? Number(fs.readFileSync('drive.txt', 'utf8')) : null;
+    if (want !== null && want !== drive) {
+      await p.evaluate(kph => {
+        vehicle.speed_kph = kph;
+        vehicle.accelerator_pct = kph * 0.012 / 19 * 100;
+        vehicle.brake_pct = 0;
+      }, want);
+      drive = want;
+    }
     await p.screenshot({path: `frames/c_${t}.jpg`, type: 'jpeg', quality: 88, clip: {x: 0, y: 0, width: 1920, height: 1080}});
     n++;
     const wait = 200 - (Date.now() - t);
