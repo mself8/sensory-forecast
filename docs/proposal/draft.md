@@ -277,7 +277,7 @@
 
 - GitHub 저장소: 팀이 공개 범위를 정한 뒤 링크를 넣습니다.
 - 시연 영상: 남양주 화도읍 맷돌로와 서울양양고속도로 월문1터널 구간 시험 주행 122초. 저장소 `docs/video/sensory-forecast-demo.mp4`
-- APK: 저장소 `apk/팀명_앱이름_release.apk`
+- APK: 저장소 `apk/geobility_감각 예보_release.apk`
 - 출처 목록: 아래
 
 ## 8. 숏폼 링크
