@@ -171,7 +171,8 @@ fun phraseFor(kind: RoadEventKind, count: Int = 1): String = when (kind) {
     RoadEventKind.TUNNEL, RoadEventKind.UNDERPASS -> "곧 터널이에요. 어두워져요."
     RoadEventKind.RAILROAD_CROSSING -> "곧 땡땡 소리가 나요."
     RoadEventKind.CONSTRUCTION -> "곧 시끄러운 길이에요."
-    RoadEventKind.TOLLGATE -> "곧 멈춰요. 돈 내는 곳이에요."
+    // 하이패스 차는 서지 않고 지나가고, 앱은 하이패스 카드가 있는지 모릅니다. 그래서 멈춘다고 약속하지 않습니다.
+    RoadEventKind.TOLLGATE -> "곧 느려지거나 멈춰요."
     RoadEventKind.REST_AREA -> "곧 휴게소에 들러요."
     RoadEventKind.ARRIVAL -> "곧 내려요."
     RoadEventKind.REROUTE -> "길이 바뀌었어요."
